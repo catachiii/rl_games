@@ -3,8 +3,9 @@ import numpy as np
 from smac.env import StarCraft2Env
 from smac.env import MultiAgentEnv
 
+
 class SMACEnv(gym.Env):
-    def __init__(self, name="3m",  **kwargs):
+    def __init__(self, name="3m", **kwargs):
         gym.Env.__init__(self)
         self._seed = kwargs.pop('seed', None)
         self.reward_sparse = kwargs.get('reward_sparse', False)
@@ -24,8 +25,9 @@ class SMACEnv(gym.Env):
 
         if self.apply_agent_ids:
             one_hot_agents = self.n_agents
-        self.observation_space = gym.spaces.Box(low=0, high=1, shape=(self.env_info['obs_shape']+one_hot_agents, ), dtype=np.float32)
-        self.state_space = gym.spaces.Box(low=0, high=1, shape=(self.env_info['state_shape'], ), dtype=np.float32)
+        self.observation_space = gym.spaces.Box(low=0, high=1, shape=(self.env_info['obs_shape'] + one_hot_agents,),
+                                                dtype=np.float32)
+        self.state_space = gym.spaces.Box(low=0, high=1, shape=(self.env_info['state_shape'],), dtype=np.float32)
 
         self.obs_dict = {}
 
@@ -53,7 +55,7 @@ class SMACEnv(gym.Env):
             print('saving replay')
             self.env.save_replay()
         self._game_num += 1
-        obs, state = self.env.reset() # rename, to think remove
+        obs, state = self.env.reset()  # rename, to think remove
         obs_dict = self._preproc_state_obs(state, obs)
 
         return obs_dict
@@ -65,8 +67,7 @@ class SMACEnv(gym.Env):
         for ind, action in enumerate(actions, start=0):
             avail_actions = np.nonzero(mask[ind])[0]
             if action not in avail_actions:
-                actions[ind] = np.random.choice(avail_actions)
-                #rewards[ind] = -0.05
+                actions[ind] = np.random.choice(avail_actions)  # rewards[ind] = -0.05
         return actions, rewards
 
     def step(self, actions):
@@ -77,7 +78,7 @@ class SMACEnv(gym.Env):
 
         reward, done, info = self.env.step(actions)
         time_out = self.env._episode_steps >= self.env.episode_limit
-        info['time_outs'] = [time_out]*self.n_agents
+        info['time_outs'] = [time_out] * self.n_agents
 
         if done:
             battle_won = info.get('battle_won', False)
@@ -87,8 +88,8 @@ class SMACEnv(gym.Env):
         obs = self.env.get_obs()
         state = self.env.get_state()
         obses = self._preproc_state_obs(state, obs)
-        rewards = np.repeat (reward, self.n_agents)
-        dones = np.repeat (done, self.n_agents)
+        rewards = np.repeat(reward, self.n_agents)
+        dones = np.repeat(done, self.n_agents)
 
         if fixed_rewards is not None:
             rewards += fixed_rewards
@@ -97,10 +98,9 @@ class SMACEnv(gym.Env):
 
     def get_action_mask(self):
         return np.array(self.env.get_avail_actions(), dtype=bool)
-    
+
     def has_action_mask(self):
         return not self.random_invalid_step
 
     def seed(self, _):
         pass
-

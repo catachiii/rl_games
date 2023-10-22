@@ -1,5 +1,5 @@
 from rl_games.common.transforms import transforms
-import torch
+
 
 class SoftAugmentation():
     def __init__(self, **kwargs):
@@ -8,13 +8,13 @@ class SoftAugmentation():
         print('aug coef:', self.aug_coef)
         self.name = self.transform_config['name']
 
-        #TODO: remove hardcode
+        # TODO: remove hardcode
         self.transform = transforms.ImageDatasetTransform(**self.transform_config)
 
     def get_coef(self):
         return self.aug_coef
 
-    def get_loss(self, p_dict, model, input_dict, loss_type = 'both'):
+    def get_loss(self, p_dict, model, input_dict, loss_type='both'):
         '''
         loss_type: 'critic', 'policy', 'both'
         '''
@@ -28,6 +28,6 @@ class SoftAugmentation():
         if loss_type == 'critic' or loss_type == 'both':
             p_value = p_dict['value'].detach()
             q_value = q_dict['value']
-            loss = loss + (0.5 * (p_value - q_value)**2).sum(dim=-1)
-        
+            loss = loss + (0.5 * (p_value - q_value) ** 2).sum(dim=-1)
+
         return loss

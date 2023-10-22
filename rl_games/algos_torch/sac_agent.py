@@ -1,21 +1,18 @@
-from rl_games.algos_torch import torch_ext
-
-from rl_games.common import vecenv
-from rl_games.common import schedulers
-from rl_games.common import experience
-from rl_games.common.a2c_common import print_statistics
-
-from rl_games.interfaces.base_algorithm import  BaseAlgorithm
-from torch.utils.tensorboard import SummaryWriter
-from datetime import datetime
-from rl_games.algos_torch import  model_builder
-from torch import optim
-import torch 
-from torch import nn
-import torch.nn.functional as F
-import numpy as np
-import time
 import os
+import time
+from datetime import datetime
+
+import numpy as np
+import torch
+from torch import nn
+from torch.utils.tensorboard import SummaryWriter
+
+from rl_games.algos_torch import model_builder
+from rl_games.algos_torch import torch_ext
+from rl_games.common import experience
+from rl_games.common import vecenv
+from rl_games.common.a2c_common import print_statistics
+from rl_games.interfaces.base_algorithm import BaseAlgorithm
 
 
 class SACAgent(BaseAlgorithm):
@@ -39,7 +36,7 @@ class SACAgent(BaseAlgorithm):
         self.normalize_input = config.get("normalize_input", False)
 
         # TODO: double-check! To use bootstrap instead?
-        self.max_env_steps = config.get("max_env_steps", 1000) # temporary, in future we will use other approach
+        self.max_env_steps = config.get("max_env_steps", 1000)  # temporary, in future we will use other approach
 
         print(self.batch_size, self.num_actors, self.num_agents)
 
@@ -50,19 +47,13 @@ class SACAgent(BaseAlgorithm):
         action_space = self.env_info['action_space']
         self.actions_num = action_space.shape[0]
 
-        self.action_range = [
-            float(self.env_info['action_space'].low.min()),
-            float(self.env_info['action_space'].high.max())
-        ]
+        self.action_range = [float(self.env_info['action_space'].low.min()),
+            float(self.env_info['action_space'].high.max())]
 
         obs_shape = torch_ext.shape_whc_to_cwh(self.obs_shape)
-        net_config = {
-            'obs_dim': self.env_info["observation_space"].shape[0],
-            'action_dim': self.env_info["action_space"].shape[0],
-            'actions_num' : self.actions_num,
-            'input_shape' : obs_shape,
-            'normalize_input': self.normalize_input,
-        }
+        net_config = {'obs_dim': self.env_info["observation_space"].shape[0],
+            'action_dim': self.env_info["action_space"].shape[0], 'actions_num': self.actions_num,
+            'input_shape': obs_shape, 'normalize_input': self.normalize_input, }
         self.model = self.network.build(net_config)
         self.model.to(self._device)
 
@@ -76,14 +67,12 @@ class SACAgent(BaseAlgorithm):
                                                  lr=float(self.config["critic_lr"]),
                                                  betas=self.config.get("critic_betas", [0.9, 0.999]))
 
-        self.log_alpha_optimizer = torch.optim.Adam([self.log_alpha],
-                                                    lr=float(self.config["alpha_lr"]),
+        self.log_alpha_optimizer = torch.optim.Adam([self.log_alpha], lr=float(self.config["alpha_lr"]),
                                                     betas=self.config.get("alphas_betas", [0.9, 0.999]))
 
         self.replay_buffer = experience.VectorizedReplayBuffer(self.env_info['observation_space'].shape,
-        self.env_info['action_space'].shape,
-        self.replay_buffer_size,
-        self._device)
+                                                               self.env_info['action_space'].shape,
+                                                               self.replay_buffer_size, self._device)
         self.target_entropy_coef = config.get("target_entropy_coef", 1.0)
         self.target_entropy = self.target_entropy_coef * -self.env_info['action_space'].shape[0]
         print("Target entropy", self.target_entropy)
@@ -107,7 +96,7 @@ class SACAgent(BaseAlgorithm):
 
         self._device = config.get('device', 'cuda:0')
 
-        #temporary for Isaac gym compatibility
+        # temporary for Isaac gym compatibility
         self.ppo_device = self._device
         print('Env info:')
         print(self.env_info)
@@ -115,7 +104,7 @@ class SACAgent(BaseAlgorithm):
         self.rewards_shaper = config['reward_shaper']
         self.observation_space = self.env_info['observation_space']
         self.weight_decay = config.get('weight_decay', 0.0)
-        #self.use_action_masks = config.get('use_action_masks', False)
+        # self.use_action_masks = config.get('use_action_masks', False)
         self.is_train = config.get('is_train', True)
 
         self.c_loss = nn.MSELoss()
@@ -206,8 +195,8 @@ class SACAgent(BaseAlgorithm):
     def get_weights(self):
         print("Loading weights")
         state = {'actor': self.model.sac_network.actor.state_dict(),
-         'critic': self.model.sac_network.critic.state_dict(), 
-         'critic_target': self.model.sac_network.critic_target.state_dict()}
+                 'critic': self.model.sac_network.critic.state_dict(),
+                 'critic_target': self.model.sac_network.critic_target.state_dict()}
         return state
 
     def save(self, fn):
@@ -230,7 +219,7 @@ class SACAgent(BaseAlgorithm):
         state['frame'] = self.frame
         state['actor_optimizer'] = self.actor_optimizer.state_dict()
         state['critic_optimizer'] = self.critic_optimizer.state_dict()
-        state['log_alpha_optimizer'] = self.log_alpha_optimizer.state_dict()        
+        state['log_alpha_optimizer'] = self.log_alpha_optimizer.state_dict()
 
         return state
 
@@ -288,7 +277,7 @@ class SACAgent(BaseAlgorithm):
 
         critic1_loss = self.c_loss(current_Q1, target_Q)
         critic2_loss = self.c_loss(current_Q2, target_Q)
-        critic_loss = critic1_loss + critic2_loss 
+        critic_loss = critic1_loss + critic2_loss
         self.critic_optimizer.zero_grad(set_to_none=True)
         critic_loss.backward()
         self.critic_optimizer.step()
@@ -302,7 +291,7 @@ class SACAgent(BaseAlgorithm):
         dist = self.model.actor(obs)
         action = dist.rsample()
         log_prob = dist.log_prob(action).sum(-1, keepdim=True)
-        entropy = -log_prob.mean() #dist.entropy().sum(-1, keepdim=True).mean()
+        entropy = -log_prob.mean()  # dist.entropy().sum(-1, keepdim=True).mean()
         actor_Q1, actor_Q2 = self.model.critic(obs, action)
         actor_Q = torch.min(actor_Q1, actor_Q2)
 
@@ -317,20 +306,18 @@ class SACAgent(BaseAlgorithm):
             p.requires_grad = True
 
         if self.learnable_temperature:
-            alpha_loss = (self.alpha *
-                          (-log_prob - self.target_entropy).detach()).mean()
+            alpha_loss = (self.alpha * (-log_prob - self.target_entropy).detach()).mean()
             self.log_alpha_optimizer.zero_grad(set_to_none=True)
             alpha_loss.backward()
             self.log_alpha_optimizer.step()
         else:
             alpha_loss = None
 
-        return actor_loss.detach(), entropy.detach(), self.alpha.detach(), alpha_loss # TODO: maybe not self.alpha
+        return actor_loss.detach(), entropy.detach(), self.alpha.detach(), alpha_loss  # TODO: maybe not self.alpha
 
     def soft_update_params(self, net, target_net, tau):
         for param, target_param in zip(net.parameters(), target_net.parameters()):
-            target_param.data.copy_(tau * param.data +
-                                    (1.0 - tau) * target_param.data)
+            target_param.data.copy_(tau * param.data + (1.0 - tau) * target_param.data)
 
     def update(self, step):
         obs, action, reward, next_obs, done = self.replay_buffer.sample(self.batch_size)
@@ -343,8 +330,7 @@ class SACAgent(BaseAlgorithm):
         actor_loss, entropy, alpha, alpha_loss = self.update_actor_and_alpha(obs, step)
 
         actor_loss_info = actor_loss, entropy, alpha, alpha_loss
-        self.soft_update_params(self.model.sac_network.critic, self.model.sac_network.critic_target,
-                                     self.critic_tau)
+        self.soft_update_params(self.model.sac_network.critic, self.model.sac_network.critic_target, self.critic_tau)
         return actor_loss_info, critic1_loss, critic2_loss
 
     def preproc_obs(self, obs):
@@ -358,7 +344,7 @@ class SACAgent(BaseAlgorithm):
         if isinstance(obs, torch.Tensor):
             self.is_tensor_obses = True
         elif isinstance(obs, np.ndarray):
-            assert(self.observation_space.dtype != np.int8)
+            assert (self.observation_space.dtype != np.int8)
             if self.observation_space.dtype == np.uint8:
                 obs = torch.ByteTensor(obs).to(self._device)
             else:
@@ -375,8 +361,8 @@ class SACAgent(BaseAlgorithm):
                 upd_obs[key] = self._obs_to_tensors_internal(value)
         else:
             upd_obs = self.cast_obs(obs)
-        if not obs_is_dict or 'obs' not in obs:    
-            upd_obs = {'obs' : upd_obs}
+        if not obs_is_dict or 'obs' not in obs:
+            upd_obs = {'obs': upd_obs}
 
         return upd_obs
 
@@ -398,12 +384,13 @@ class SACAgent(BaseAlgorithm):
 
     def env_step(self, actions):
         actions = self.preprocess_actions(actions)
-        obs, rewards, dones, infos = self.vec_env.step(actions) # (obs_space) -> (n, obs_space)
+        obs, rewards, dones, infos = self.vec_env.step(actions)  # (obs_space) -> (n, obs_space)
 
         if self.is_tensor_obses:
             return self.obs_to_tensors(obs), rewards.to(self._device), dones.to(self._device), infos
         else:
-            return torch.from_numpy(obs).to(self._device), torch.from_numpy(rewards).to(self._device), torch.from_numpy(dones).to(self._device), infos
+            return torch.from_numpy(obs).to(self._device), torch.from_numpy(rewards).to(self._device), torch.from_numpy(
+                dones).to(self._device), infos
 
     def env_reset(self):
         with torch.no_grad():
@@ -438,7 +425,7 @@ class SACAgent(BaseAlgorithm):
         self.mean_rewards = self.last_mean_rewards = -1000000000
         self.algo_observer.after_clear_stats()
 
-    def play_steps(self, random_exploration = False):
+    def play_steps(self, random_exploration=False):
         total_time_start = time.time()
         total_update_time = 0
         total_time = 0
@@ -459,7 +446,8 @@ class SACAgent(BaseAlgorithm):
         for s in range(self.num_steps_per_episode):
             self.set_eval()
             if random_exploration:
-                action = torch.rand((self.num_actors, *self.env_info["action_space"].shape), device=self._device) * 2.0 - 1.0
+                action = torch.rand((self.num_actors, *self.env_info["action_space"].shape),
+                                    device=self._device) * 2.0 - 1.0
             else:
                 with torch.no_grad():
                     action = self.act(obs.float(), self.env_info["action_space"].shape, sample=True)
@@ -491,7 +479,7 @@ class SACAgent(BaseAlgorithm):
             self.current_rewards = self.current_rewards * not_dones
             self.current_lengths = self.current_lengths * not_dones
 
-            if isinstance(next_obs, dict):    
+            if isinstance(next_obs, dict):
                 next_obs_processed = next_obs['obs']
                 self.obs = next_obs_processed.clone()
             else:
@@ -499,7 +487,8 @@ class SACAgent(BaseAlgorithm):
 
             rewards = self.rewards_shaper(rewards)
 
-            self.replay_buffer.add(obs, action, torch.unsqueeze(rewards, 1), next_obs_processed, torch.unsqueeze(dones, 1))
+            self.replay_buffer.add(obs, action, torch.unsqueeze(rewards, 1), next_obs_processed,
+                                   torch.unsqueeze(dones, 1))
 
             if isinstance(obs, dict):
                 obs = self.obs['obs']
@@ -550,8 +539,8 @@ class SACAgent(BaseAlgorithm):
             fps_step_inference = curr_frames / play_time
             fps_total = curr_frames / epoch_total_time
 
-            print_statistics(self.print_stats, curr_frames, step_time, play_time, epoch_total_time, 
-                self.epoch_num, self.max_epochs, self.frame, self.max_frames)
+            print_statistics(self.print_stats, curr_frames, step_time, play_time, epoch_total_time, self.epoch_num,
+                             self.max_epochs, self.frame, self.max_frames)
 
             self.writer.add_scalar('performance/step_inference_rl_update_fps', fps_total, self.frame)
             self.writer.add_scalar('performance/step_inference_fps', fps_step_inference, self.frame)
@@ -603,8 +592,9 @@ class SACAgent(BaseAlgorithm):
                         print('WARNING: Max epochs reached before any env terminated at least once')
                         mean_rewards = -np.inf
 
-                    self.save(os.path.join(self.nn_dir, 'last_' + self.config['name'] + '_ep_' + str(self.epoch_num) \
-                        + '_rew_' + str(mean_rewards).replace('[', '_').replace(']', '_')))
+                    self.save(os.path.join(self.nn_dir,
+                                           'last_' + self.config['name'] + '_ep_' + str(self.epoch_num) + '_rew_' + str(
+                                               mean_rewards).replace('[', '_').replace(']', '_')))
                     print('MAX EPOCHS NUM!')
                     should_exit = True
 
@@ -613,8 +603,9 @@ class SACAgent(BaseAlgorithm):
                         print('WARNING: Max frames reached before any env terminated at least once')
                         mean_rewards = -np.inf
 
-                    self.save(os.path.join(self.nn_dir, 'last_' + self.config['name'] + '_frame_' + str(self.frame) \
-                        + '_rew_' + str(mean_rewards).replace('[', '_').replace(']', '_')))
+                    self.save(os.path.join(self.nn_dir,
+                                           'last_' + self.config['name'] + '_frame_' + str(self.frame) + '_rew_' + str(
+                                               mean_rewards).replace('[', '_').replace(']', '_')))
                     print('MAX FRAMES NUM!')
                     should_exit = True
 

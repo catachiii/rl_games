@@ -3,14 +3,16 @@ import gym
 import numpy as np
 import torch.utils.dlpack as tpack
 
+
 def jax_to_torch(tensor):
-    from jax._src.dlpack import (to_dlpack,)
+    from jax._src.dlpack import (to_dlpack, )
     tensor = to_dlpack(tensor)
     tensor = tpack.from_dlpack(tensor)
     return tensor
 
+
 def torch_to_jax(tensor):
-    from jax._src.dlpack import (from_dlpack,)
+    from jax._src.dlpack import (from_dlpack, )
     tensor = tpack.to_dlpack(tensor)
     tensor = from_dlpack(tensor)
     return tensor
@@ -22,12 +24,8 @@ class BraxEnv(IVecEnv):
         import jax.numpy as jnp
 
         self.batch_size = num_actors
-        env_name=kwargs.pop('env_name', 'ant')
-        self.env = envs.create_gym_env(env_name=env_name,
-                   batch_size= self.batch_size,
-                   seed = 0,
-                   backend = 'gpu'
-                   )
+        env_name = kwargs.pop('env_name', 'ant')
+        self.env = envs.create_gym_env(env_name=env_name, batch_size=self.batch_size, seed=0, backend='gpu')
 
         obs_high = np.inf * np.ones(self.env._env.unwrapped.observation_size)
         self.observation_space = gym.spaces.Box(-obs_high, obs_high, dtype=np.float32)

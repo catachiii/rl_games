@@ -1,16 +1,13 @@
 import torch
 import torch.nn as nn
-import numpy as np
-import rl_games.algos_torch.torch_ext as torch_ext
 
 '''
 updates moving statistics with momentum
 '''
+
+
 class GeneralizedMovingStats(nn.Module):
-    def __init__(
-        self, insize, impl='mean_std', decay=0.99, max=1e5, eps=0.0, perclo=0.05,
-        perchi=0.95
-    ):
+    def __init__(self, insize, impl='mean_std', decay=0.99, max=1e5, eps=0.0, perclo=0.05, perchi=0.95):
         super().__init__()
         self.impl = impl
         self.decay = decay
@@ -27,7 +24,7 @@ class GeneralizedMovingStats(nn.Module):
         elif self.impl == 'mean_std_corr':
             self.step = torch.nn.Parameter(torch.ones((1), dtype=torch.int32), requires_grad=False)
             self.mean = torch.nn.Parameter(torch.zeros((insize), dtype=torch.float32), requires_grad=False)
-            self.sqrs = torch.nn.Parameter(torch.zeros((insize), dtype=torch.float32), requires_grad=False)            
+            self.sqrs = torch.nn.Parameter(torch.zeros((insize), dtype=torch.float32), requires_grad=False)
         elif self.impl == 'min_max':
             self.low = torch.nn.Parameter(torch.zeros((insize), dtype=torch.float32), requires_grad=False)
             self.high = torch.nn.Parameter(torch.zeros((insize), dtype=torch.float32), requires_grad=False)
@@ -61,7 +58,7 @@ class GeneralizedMovingStats(nn.Module):
             return mean, std
         elif self.impl == 'min_max':
             offset = self.low
-            invscale = torch.clamp_min(self.high-self.low, 1/self.max)
+            invscale = torch.clamp_min(self.high - self.low, 1 / self.max)
             return offset, invscale
         elif self.impl == 'perc_ema':
             offset = self.low
@@ -75,7 +72,6 @@ class GeneralizedMovingStats(nn.Module):
             return lo, invscale
         else:
             raise NotImplementedError(self.impl)
-
 
     def _update_stats(self, x):
         m = self.decay

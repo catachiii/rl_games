@@ -55,7 +55,6 @@ class NoisyFactorizedLinear(nn.Linear):
         return F.linear(input, self.weight + self.sigma_weight * noise_v, bias)
 
 
-
 def symlog(x):
     return torch.sign(x) * torch.log(torch.abs(x) + 1.0)
 
@@ -63,20 +62,20 @@ def symlog(x):
 def symexp(x):
     return torch.sign(x) * (torch.exp(torch.abs(x)) - 1.0)
 
+
 class SymLog(nn.Module):
 
     def __init__(self):
-
-        super().__init__() 
+        super().__init__()
 
     def forward(self, input):
-        return symlog(input) 
+        return symlog(input)
+
 
 class SymExp(nn.Module):
 
     def __init__(self):
-
-        super().__init__() 
+        super().__init__()
 
     def forward(self, input):
-        return symexp(input) 
+        return symexp(input)

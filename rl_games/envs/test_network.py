@@ -2,7 +2,7 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 
- 
+
 class TestNet(nn.Module):
     def __init__(self, params, **kwargs):
         nn.Module.__init__(self)
@@ -10,9 +10,9 @@ class TestNet(nn.Module):
         input_shape = kwargs.pop('input_shape')
         num_inputs = 0
 
-        assert(type(input_shape) is dict)
-        for k,v in input_shape.items():
-            num_inputs +=v[0]
+        assert (type(input_shape) is dict)
+        for k, v in input_shape.items():
+            num_inputs += v[0]
 
         self.central_value = params.get('central_value', False)
         self.value_size = kwargs.pop('value_size', 1)
@@ -39,6 +39,7 @@ class TestNet(nn.Module):
 
 
 from rl_games.algos_torch.network_builder import NetworkBuilder
+
 
 class TestNetBuilder(NetworkBuilder):
     def __init__(self, **kwargs):

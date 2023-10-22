@@ -5,15 +5,16 @@ import yaml
 from rl_games.torch_runner import Runner
 import os
 
+
 class SlimeVolleySelfplay(gym.Env):
-    def __init__(self, name="SlimeVolleyDiscrete-v0",  **kwargs):
+    def __init__(self, name="SlimeVolleyDiscrete-v0", **kwargs):
         gym.Env.__init__(self)
         self.name = name
         self.is_deterministic = kwargs.pop('is_deterministic', False)
         self.config_path = kwargs.pop('config_path')
         self.agent = None
         self.pos_scale = 1
-        self.neg_scale =  kwargs.pop('neg_scale', 1)
+        self.neg_scale = kwargs.pop('neg_scale', 1)
         self.sum_rewards = 0
         self.env = gym.make(name, **kwargs)
         self.observation_space = self.env.observation_space
@@ -41,22 +42,21 @@ class SlimeVolleySelfplay(gym.Env):
 
         self.agent = runner.create_player()
 
-
     def step(self, action):
         op_obs = self.agent.obs_to_torch(self.opponent_obs)
-        
+
         opponent_action = self.agent.get_action(op_obs, self.is_deterministic).item()
         obs, reward, done, info = self.env.step(action, opponent_action)
         self.sum_rewards += reward
         if reward < 0:
             reward = reward * self.neg_scale
-        
+
         self.opponent_obs = info['otherObs']
         if done:
             info['battle_won'] = np.sign(self.sum_rewards)
         return obs, reward, done, info
 
-    def render(self,mode):
+    def render(self, mode):
         self.env.render(mode)
 
     def update_weights(self, weigths):

@@ -6,11 +6,13 @@ from rl_games.algos_torch import models
 NETWORK_REGISTRY = {}
 MODEL_REGISTRY = {}
 
+
 def register_network(name, target_class):
     NETWORK_REGISTRY[name] = lambda **kwargs: target_class()
 
+
 def register_model(name, target_class):
-    MODEL_REGISTRY[name] = lambda  network, **kwargs: target_class(network)
+    MODEL_REGISTRY[name] = lambda network, **kwargs: target_class(network)
 
 
 class NetworkBuilder:

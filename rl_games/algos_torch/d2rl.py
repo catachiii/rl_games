@@ -1,10 +1,8 @@
 import torch
 
+
 class D2RLNet(torch.nn.Module):
-    def __init__(self, input_size, 
-        units, 
-        activations,
-        norm_func_name = None):
+    def __init__(self, input_size, units, activations, norm_func_name=None):
         torch.nn.Module.__init__(self)
         self.activations = torch.nn.ModuleList(activations)
         self.linears = torch.nn.ModuleList([])
@@ -25,9 +23,9 @@ class D2RLNet(torch.nn.Module):
         x = self.linears[0](input)
         x = self.activations[0](x)
         x = self.norm_layers[0](x)
-        for i in range(1,self.num_layers):
-            x = torch.cat([x,input], dim=1)
+        for i in range(1, self.num_layers):
+            x = torch.cat([x, input], dim=1)
             x = self.linears[i](x)
-            x = self.norm_layers[i](x)  
-            x = self.activations[i](x)               
+            x = self.norm_layers[i](x)
+            x = self.activations[i](x)
         return x

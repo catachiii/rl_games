@@ -47,5 +47,3 @@ class BaseAlgorithm(ABC):
     @abstractmethod
     def set_param(self, param_name, param_value):
         pass
-
-

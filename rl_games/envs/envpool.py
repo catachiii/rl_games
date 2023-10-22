@@ -5,34 +5,29 @@ import numpy as np
 
 def flatten_dict(obs):
     res = []
-    for k,v in obs.items():
+    for k, v in obs.items():
         res.append(v.reshape(v.shape[0], -1))
-    
+
     res = np.column_stack(res)
     return res
+
 
 class Envpool(IVecEnv):
     def __init__(self, config_name, num_actors, **kwargs):
         import envpool
 
         self.batch_size = num_actors
-        env_name=kwargs.pop('env_name')
+        env_name = kwargs.pop('env_name')
         self.has_lives = kwargs.pop('has_lives', False)
         self.use_dict_obs_space = kwargs.pop('use_dict_obs_space', False)
-        self.flatten_obs = kwargs.pop('flatten_obs', False) # for the dm control
-        self.env = envpool.make( env_name,
-                                 env_type=kwargs.pop('env_type', 'gym'),
-                                 num_envs=num_actors,
-                                 batch_size=self.batch_size,
-                                 **kwargs
-                                )
-        
+        self.flatten_obs = kwargs.pop('flatten_obs', False)  # for the dm control
+        self.env = envpool.make(env_name, env_type=kwargs.pop('env_type', 'gym'), num_envs=num_actors,
+                                batch_size=self.batch_size, **kwargs)
+
         if self.use_dict_obs_space:
-            self.observation_space= gym.spaces.Dict({
-                'observation' : self.env.observation_space,
-                'reward' : gym.spaces.Box(low=0, high=1, shape=( ), dtype=np.float32),
-                'last_action': gym.spaces.Box(low=0, high=self.env.action_space.n, shape=(), dtype=int)
-            })
+            self.observation_space = gym.spaces.Dict({'observation': self.env.observation_space,
+                'reward': gym.spaces.Box(low=0, high=1, shape=( ), dtype=np.float32),
+                'last_action': gym.spaces.Box(low=0, high=self.env.action_space.n, shape=(), dtype=int)})
         else:
             self.observation_space = self.env.observation_space
 
@@ -63,17 +58,13 @@ class Envpool(IVecEnv):
             self.scores *= 1 - dones
 
     def step(self, action):
-        next_obs, reward, is_done, info = self.env.step(action , self.ids)
+        next_obs, reward, is_done, info = self.env.step(action, self.ids)
         info['time_outs'] = info['TimeLimit.truncated']
         self._set_scores(info, is_done)
         if self.flatten_obs:
             next_obs = flatten_dict(next_obs)
         if self.use_dict_obs_space:
-            next_obs = {
-                'observation': next_obs,
-                'reward': np.clip(reward, -1, 1),
-                'last_action': action
-            }
+            next_obs = {'observation': next_obs, 'reward': np.clip(reward, -1, 1), 'last_action': action}
         return next_obs, reward, is_done, info
 
     def reset(self):
@@ -81,12 +72,8 @@ class Envpool(IVecEnv):
         if self.flatten_obs:
             obs = flatten_dict(obs)
         if self.use_dict_obs_space:
-            obs = {
-                'observation': obs,
-                'reward': np.zeros(obs.shape[0]),
-                'last_action': np.zeros(obs.shape[0]),
-            }
-        
+            obs = {'observation': obs, 'reward': np.zeros(obs.shape[0]), 'last_action': np.zeros(obs.shape[0]), }
+
         return obs
 
     def get_number_of_agents(self):
@@ -97,8 +84,6 @@ class Envpool(IVecEnv):
         info['action_space'] = self.action_space
         info['observation_space'] = self.observation_space
         return info
-
-
 
 
 def create_envpool(**kwargs):

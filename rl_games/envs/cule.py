@@ -10,20 +10,19 @@ class CuleEnv(IVecEnv):
         from torchcule.atari import Env as AtariEnv
 
         self.batch_size = num_actors
-        env_name=kwargs.pop('env_name')
+        env_name = kwargs.pop('env_name')
         self.has_lives = kwargs.pop('has_lives', False)
         self.device = kwargs.pop('device', 'cuda:0')
         self.episodic_life = kwargs.pop('episodic_life', False)
         self.use_dict_obs_space = kwargs.pop('use_dict_obs_space', False)
-        self.env = AtariEnv(env_name, num_actors, color_mode='gray', repeat_prob=0.0, device=self.device, rescale=True, episodic_life=self.episodic_life, frameskip=4)
+        self.env = AtariEnv(env_name, num_actors, color_mode='gray', repeat_prob=0.0, device=self.device, rescale=True,
+                            episodic_life=self.episodic_life, frameskip=4)
         if self.use_dict_obs_space:
-            self.observation_space= gym.spaces.Dict({
-                'observation' : self.env.observation_space,
-                'reward' : gym.spaces.Box(low=0, high=1, shape=( ), dtype=np.float32),
-                'last_action': gym.spaces.Box(low=0, high=self.env.action_space.n, shape=(), dtype=int)
-            })
+            self.observation_space = gym.spaces.Dict({'observation': self.env.observation_space,
+                'reward': gym.spaces.Box(low=0, high=1, shape=( ), dtype=np.float32),
+                'last_action': gym.spaces.Box(low=0, high=self.env.action_space.n, shape=(), dtype=int)})
         else:
-            self.observation_space = gym.spaces.Box(0, 255, (84, 84, 1), np.uint8) #self.env.observation_space
+            self.observation_space = gym.spaces.Box(0, 255, (84, 84, 1), np.uint8)  # self.env.observation_space
         self.ids = np.arange(0, num_actors)
         self.action_space = self.env.action_space
         self.scores = np.zeros(num_actors)
@@ -48,26 +47,19 @@ class CuleEnv(IVecEnv):
 
     def step(self, action):
         next_obs, reward, is_done, info = self.env.step(action)
-        #print(next_obs.size(), 'step!')
-        #info['time_outs'] = info['TimeLimit.truncated']
-        #self._set_scores(info, is_done)
+        # print(next_obs.size(), 'step!')
+        # info['time_outs'] = info['TimeLimit.truncated']
+        # self._set_scores(info, is_done)
         if self.use_dict_obs_space:
-            next_obs = {
-                'observation': next_obs,
-                'reward': torch.clip(reward, -1, 1),
-                'last_action': action
-            }
+            next_obs = {'observation': next_obs, 'reward': torch.clip(reward, -1, 1), 'last_action': action}
         return next_obs, reward, is_done, info
 
     def reset(self):
         obs = self.env.reset()
-        #print(obs.size(), 'reset!')
+        # print(obs.size(), 'reset!')
         if self.use_dict_obs_space:
-            obs = {
-                'observation': obs,
-                'reward': torch.zeros(obs.shape[0], device=self.device),
-                'last_action': torch.zeros(obs.shape[0], device=self.device),
-            }
+            obs = {'observation': obs, 'reward': torch.zeros(obs.shape[0], device=self.device),
+                'last_action': torch.zeros(obs.shape[0], device=self.device), }
         return obs
 
     def get_number_of_agents(self):

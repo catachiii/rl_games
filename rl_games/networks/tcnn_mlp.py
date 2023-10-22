@@ -13,8 +13,9 @@ class TcnnNet(nn.Module):
         self.central_value = params.get('central_value', False)
         self.sigma = torch.nn.Parameter(torch.zeros(actions_num, requires_grad=True, dtype=torch.float32),
                                         requires_grad=True)
-        self.model = tcnn.NetworkWithInputEncoding(n_input_dims=num_inputs, n_output_dims=actions_num+1,
-                                              encoding_config=params["encoding"], network_config=params["network"])
+        self.model = tcnn.NetworkWithInputEncoding(n_input_dims=num_inputs, n_output_dims=actions_num + 1,
+                                                   encoding_config=params["encoding"], network_config=params["network"])
+
     def is_rnn(self):
         return False
 

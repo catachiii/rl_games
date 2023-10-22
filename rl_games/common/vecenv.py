@@ -1,11 +1,13 @@
-from rl_games.common.ivecenv import IVecEnv
-from rl_games.common.env_configurations import configurations
-from rl_games.common.tr_helpers import dicts_to_dict_with_arrays
-import numpy as np
-import gym
 import random
-from time import sleep
+
+import gym
+import numpy as np
 import torch
+
+from rl_games.common.env_configurations import configurations
+from rl_games.common.ivecenv import IVecEnv
+from rl_games.common.tr_helpers import dicts_to_dict_with_arrays
+
 
 class RayWorker:
     def __init__(self, config_name, config):
@@ -28,7 +30,7 @@ class RayWorker:
 
     def step(self, action):
         next_state, reward, is_done, info = self.env.step(action)
-        
+
         if np.isscalar(is_done):
             episode_done = is_done
         else:
@@ -45,7 +47,7 @@ class RayWorker:
             np.random.seed(seed)
             random.seed(seed)
             self.env.seed(seed)
-            
+
     def render(self):
         self.env.render()
 
@@ -76,7 +78,7 @@ class RayWorker:
         info = {}
         observation_space = self.env.observation_space
 
-        #if isinstance(observation_space, gym.spaces.dict.Dict):
+        # if isinstance(observation_space, gym.spaces.dict.Dict):
         #    observation_space = observation_space['observations']
 
         info['action_space'] = self.env.action_space
@@ -103,14 +105,13 @@ class RayVecEnv(IVecEnv):
         self.use_torch = False
         self.seed = kwargs.pop('seed', None)
 
-        
         self.remote_worker = self.ray.remote(RayWorker)
         self.workers = [self.remote_worker.remote(self.config_name, kwargs) for i in range(self.num_actors)]
 
         if self.seed is not None:
             seeds = range(self.seed, self.seed + self.num_actors)
             seed_set = []
-            for (seed, worker) in zip(seeds, self.workers):	        
+            for (seed, worker) in zip(seeds, self.workers):
                 seed_set.append(worker.seed.remote(seed))
             self.ray.get(seed_set)
 
@@ -129,16 +130,17 @@ class RayVecEnv(IVecEnv):
             self.concat_func = np.stack
         else:
             self.concat_func = np.concatenate
-    
+
     def step(self, actions):
         newobs, newstates, newrewards, newdones, newinfos = [], [], [], [], []
         res_obs = []
         if self.num_agents == 1:
-            for (action, worker) in zip(actions, self.workers):	        
+            for (action, worker) in zip(actions, self.workers):
                 res_obs.append(worker.step.remote(action))
         else:
             for num, worker in enumerate(self.workers):
-                res_obs.append(worker.step.remote(actions[self.num_agents * num: self.num_agents * num + self.num_agents]))
+                res_obs.append(
+                    worker.step.remote(actions[self.num_agents * num: self.num_agents * num + self.num_agents]))
 
         all_res = self.ray.get(res_obs)
         for res in all_res:
@@ -160,11 +162,11 @@ class RayVecEnv(IVecEnv):
         if self.use_global_obs:
             newobsdict = {}
             newobsdict["obs"] = ret_obs
-            
+
             if self.state_type_dict:
                 newobsdict["states"] = dicts_to_dict_with_arrays(newstates, True)
             else:
-                newobsdict["states"] = np.stack(newstates)            
+                newobsdict["states"] = np.stack(newstates)
             ret_obs = newobsdict
         if self.concat_infos:
             newinfos = dicts_to_dict_with_arrays(newinfos, False)
@@ -190,7 +192,7 @@ class RayVecEnv(IVecEnv):
 
     def reset(self):
         res_obs = [worker.reset.remote() for worker in self.workers]
-        newobs, newstates = [],[]
+        newobs, newstates = [], []
         for res in res_obs:
             cobs = self.ray.get(res)
             if self.use_global_obs:
@@ -207,30 +209,37 @@ class RayVecEnv(IVecEnv):
         if self.use_global_obs:
             newobsdict = {}
             newobsdict["obs"] = ret_obs
-            
+
             if self.state_type_dict:
                 newobsdict["states"] = dicts_to_dict_with_arrays(newstates, True)
             else:
-                newobsdict["states"] = np.stack(newstates)            
+                newobsdict["states"] = np.stack(newstates)
             ret_obs = newobsdict
         return ret_obs
 
+
 vecenv_config = {}
+
 
 def register(config_name, func):
     vecenv_config[config_name] = func
+
 
 def create_vec_env(config_name, num_actors, **kwargs):
     vec_env_name = configurations[config_name]['vecenv_type']
     return vecenv_config[vec_env_name](config_name, num_actors, **kwargs)
 
+
 register('RAY', lambda config_name, num_actors, **kwargs: RayVecEnv(config_name, num_actors, **kwargs))
 
 from rl_games.envs.brax import BraxEnv
+
 register('BRAX', lambda config_name, num_actors, **kwargs: BraxEnv(config_name, num_actors, **kwargs))
 
 from rl_games.envs.envpool import Envpool
+
 register('ENVPOOL', lambda config_name, num_actors, **kwargs: Envpool(config_name, num_actors, **kwargs))
 
 from rl_games.envs.cule import CuleEnv
+
 register('CULE', lambda config_name, num_actors, **kwargs: CuleEnv(config_name, num_actors, **kwargs))

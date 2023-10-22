@@ -2,7 +2,6 @@ import torch
 import torch.distributions as dist
 
 
-
 def d_kl_discrete(p, q):
     # p = target, q = online
     # categorical distribution parametrized by logits
@@ -14,9 +13,10 @@ def d_kl_discrete(p, q):
 
 def d_kl_discrete_list(p, q):
     d_kl = 0
-    for pi, qi in zip(p,q):
+    for pi, qi in zip(p, q):
         d_kl += d_kl_discrete(pi, qi)
     return d_kl
+
 
 def d_kl_normal(p, q):
     # p = target, q = online

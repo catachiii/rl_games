@@ -1,6 +1,7 @@
 import copy
 import yaml
 
+
 class Experiment:
     def __init__(self, config, experiment_config):
         self.config = copy.deepcopy(config)
@@ -59,7 +60,7 @@ class Experiment:
         self.create_config()
         return config
 
-    #def __iter__(self):
+    # def __iter__(self):
     #    print('__iter__')
     #    return self
 

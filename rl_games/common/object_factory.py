@@ -7,7 +7,7 @@ class ObjectFactory:
 
     def set_builders(self, builders):
         self._builders = builders
-        
+
     def create(self, name, **kwargs):
         builder = self._builders.get(name)
         if not builder:

@@ -16,8 +16,9 @@ from rl_games.algos_torch import sac_agent
 
 
 def _restore(agent, args):
-    if 'checkpoint' in args and args['checkpoint'] is not None and args['checkpoint'] !='':
+    if 'checkpoint' in args and args['checkpoint'] is not None and args['checkpoint'] != '':
         agent.restore(args['checkpoint'])
+
 
 def _override_sigma(agent, args):
     if 'sigma' in args and args['sigma'] is not None:
@@ -34,22 +35,19 @@ class Runner:
 
     def __init__(self, algo_observer=None):
         self.algo_factory = object_factory.ObjectFactory()
-        self.algo_factory.register_builder('a2c_continuous', lambda **kwargs : a2c_continuous.A2CAgent(**kwargs))
-        self.algo_factory.register_builder('a2c_discrete', lambda **kwargs : a2c_discrete.DiscreteA2CAgent(**kwargs)) 
+        self.algo_factory.register_builder('a2c_continuous', lambda **kwargs: a2c_continuous.A2CAgent(**kwargs))
+        self.algo_factory.register_builder('a2c_discrete', lambda **kwargs: a2c_discrete.DiscreteA2CAgent(**kwargs))
         self.algo_factory.register_builder('sac', lambda **kwargs: sac_agent.SACAgent(**kwargs))
-        #self.algo_factory.register_builder('dqn', lambda **kwargs : dqnagent.DQNAgent(**kwargs))
+        # self.algo_factory.register_builder('dqn', lambda **kwargs : dqnagent.DQNAgent(**kwargs))
 
         self.player_factory = object_factory.ObjectFactory()
-        self.player_factory.register_builder('a2c_continuous', lambda **kwargs : players.PpoPlayerContinuous(**kwargs))
-        self.player_factory.register_builder('a2c_discrete', lambda **kwargs : players.PpoPlayerDiscrete(**kwargs))
-        self.player_factory.register_builder('sac', lambda **kwargs : players.SACPlayer(**kwargs))
-        #self.player_factory.register_builder('dqn', lambda **kwargs : players.DQNPlayer(**kwargs))
+        self.player_factory.register_builder('a2c_continuous', lambda **kwargs: players.PpoPlayerContinuous(**kwargs))
+        self.player_factory.register_builder('a2c_discrete', lambda **kwargs: players.PpoPlayerDiscrete(**kwargs))
+        self.player_factory.register_builder('sac', lambda **kwargs: players.SACPlayer(**kwargs))
+        # self.player_factory.register_builder('dqn', lambda **kwargs : players.DQNPlayer(**kwargs))
 
         self.algo_observer = algo_observer if algo_observer else DefaultAlgoObserver()
-        torch.backends.cudnn.benchmark = True
-        ### it didnot help for lots for openai gym envs anyway :(
-        #torch.backends.cudnn.deterministic = True
-        #torch.use_deterministic_algorithms(True)
+        torch.backends.cudnn.benchmark = True  ### it didnot help for lots for openai gym envs anyway :(  # torch.backends.cudnn.deterministic = True  # torch.use_deterministic_algorithms(True)
 
     def reset(self):
         pass

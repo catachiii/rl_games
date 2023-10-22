@@ -29,7 +29,7 @@ class CategoricalQ:
             ne_mask = u != l
             proj_distr[ne_mask, l[ne_mask]] += next_distr[ne_mask, atom] * (u - b_j)[ne_mask]
             proj_distr[ne_mask, u[ne_mask]] += next_distr[ne_mask, atom] * (b_j - l)[ne_mask]
-            
+
         if dones.any():
             proj_distr[dones] = 0.0
             tz_j = np.clip(rewards[dones], v_min, v_max)

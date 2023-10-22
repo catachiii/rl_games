@@ -1,5 +1,6 @@
 import numpy as np
 
+
 class SelfPlayManager:
     def __init__(self, config, writter):
         self.config = config
@@ -10,7 +11,7 @@ class SelfPlayManager:
         self.env_update_num = self.config.get('env_update_num', 1)
         self.env_indexes = np.arange(start=0, stop=self.env_update_num)
         self.updates_num = 0
-        
+
     def update(self, algo):
         self.updates_num += 1
         if self.check_scores:
@@ -29,4 +30,3 @@ class SelfPlayManager:
                 algo.vec_env.set_weights(self.env_indexes, algo.get_weights())
                 self.env_indexes = (self.env_indexes + 1) % (algo.num_actors)
                 self.updates_num = 0
-                      

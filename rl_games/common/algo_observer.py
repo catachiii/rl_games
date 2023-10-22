@@ -29,7 +29,7 @@ class DefaultAlgoObserver(AlgoObserver):
 
     def after_init(self, algo):
         self.algo = algo
-        self.game_scores = torch_ext.AverageMeter(1, self.algo.games_to_track).to(self.algo.ppo_device)  
+        self.game_scores = torch_ext.AverageMeter(1, self.algo.games_to_track).to(self.algo.ppo_device)
         self.writer = self.algo.writer
 
     def process_infos(self, infos, done_indices):
@@ -41,9 +41,9 @@ class DefaultAlgoObserver(AlgoObserver):
         if not isinstance(infos, dict) and len(infos) > 0 and isinstance(infos[0], dict):
             for ind in done_indices:
                 ind = ind.item()
-                if len(infos) <= ind//self.algo.num_agents:
+                if len(infos) <= ind // self.algo.num_agents:
                     continue
-                info = infos[ind//self.algo.num_agents]
+                info = infos[ind // self.algo.num_agents]
                 game_res = None
                 if 'battle_won' in info:
                     game_res = info['battle_won']
@@ -65,8 +65,9 @@ class DefaultAlgoObserver(AlgoObserver):
                     game_res = infos['battle_won']
                 if 'scores' in infos:
                     game_res = infos['scores']
-                if game_res is not None and len(game_res) > ind//self.algo.num_agents:
-                    self.game_scores.update(torch.from_numpy(np.asarray([game_res[ind//self.algo.num_agents]])).to(self.algo.ppo_device))
+                if game_res is not None and len(game_res) > ind // self.algo.num_agents:
+                    self.game_scores.update(
+                        torch.from_numpy(np.asarray([game_res[ind // self.algo.num_agents]])).to(self.algo.ppo_device))
 
     def after_clear_stats(self):
         self.game_scores.clear()

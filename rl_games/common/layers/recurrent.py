@@ -1,5 +1,7 @@
 import torch
 from torch import nn
+
+
 def repackage_hidden(h):
     """Wraps hidden states in new Tensors, to detach them from their history."""
 
@@ -8,33 +10,30 @@ def repackage_hidden(h):
     else:
         return tuple(repackage_hidden(v) for v in h)
 
+
 def multiply_hidden(h, mask):
     if isinstance(h, torch.Tensor):
         return h * mask
     else:
         return tuple(multiply_hidden(v, mask) for v in h)
 
+
 class RnnWithDones(nn.Module):
     def __init__(self, rnn_layer):
         nn.Module.__init__(self)
         self.rnn = rnn_layer
 
-
-    #got idea from ikostrikov :)
-    def forward(self, input, states, done_masks=None, bptt_len = 0):
+    # got idea from ikostrikov :)
+    def forward(self, input, states, done_masks=None, bptt_len=0):
         # ignoring bptt_ln for now
-        if done_masks == None:
+        if done_masks is None:
             return self.rnn(input, states)
 
         max_steps = input.size()[0]
         batch_size = input.size()[1]
         out_batch = []
-        not_dones = 1.0-done_masks
-        has_zeros = ((not_dones.squeeze()[1:] == 0.0)
-                     .any(dim=-1)
-                     .nonzero()
-                     .squeeze()
-                     .cpu())
+        not_dones = 1.0 - done_masks
+        has_zeros = ((not_dones.squeeze()[1:] == 0.0).any(dim=-1).nonzero().squeeze().cpu())
         # +1 to correct the masks[1:]
         if has_zeros.dim() == 0:
             # Deal with scalar
@@ -54,6 +53,7 @@ class RnnWithDones(nn.Module):
             out, states = self.rnn(input[start_idx:end_idx], states)
             out_batch.append(out)
         return torch.cat(out_batch, dim=0), states
+
     """
     def forward(self, input, states, done_masks=None, bptt_len = 0):
         max_steps = input.size()[0]
@@ -71,12 +71,14 @@ class RnnWithDones(nn.Module):
         return torch.cat(out_batch, dim=0), states
     """
 
+
 class LSTMWithDones(RnnWithDones):
     def __init__(self, *args, **kwargs):
         lstm = torch.nn.LSTM(*args, **kwargs)
         RnnWithDones.__init__(self, lstm)
 
+
 class GRUWithDones(RnnWithDones):
     def __init__(self, *args, **kwargs):
-        gru = torch.nn.GRU(*args,**kwargs)
+        gru = torch.nn.GRU(*args, **kwargs)
         RnnWithDones.__init__(self, gru)

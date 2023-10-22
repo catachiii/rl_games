@@ -30,8 +30,7 @@ class BasePlayer(object):
             use_vecenv = self.player_config.get('use_vecenv', False)
             if use_vecenv:
                 print('[BasePlayer] Creating vecenv: ', self.env_name)
-                self.env = vecenv.create_vec_env(
-                    self.env_name, self.config['num_actors'], **self.env_config)
+                self.env = vecenv.create_vec_env(self.env_name, self.config['num_actors'], **self.env_config)
                 self.env_info = self.env.get_env_info()
             else:
                 print('[BasePlayer] Creating regular env: ', self.env_name)
@@ -58,8 +57,7 @@ class BasePlayer(object):
         self.use_cuda = True
         self.batch_size = 1
         self.has_batch_dimension = False
-        self.has_central_value = self.config.get(
-            'central_value_config') is not None
+        self.has_central_value = self.config.get('central_value_config') is not None
         self.device_name = self.config.get('device_name', 'cuda')
         self.render_env = self.player_config.get('render', False)
         self.games_num = self.player_config.get('games_num', 2000)
@@ -67,8 +65,7 @@ class BasePlayer(object):
         if 'deterministic' in self.player_config:
             self.is_deterministic = self.player_config['deterministic']
         else:
-            self.is_deterministic = self.player_config.get(
-                'deterministic', True)
+            self.is_deterministic = self.player_config.get('deterministic', True)
 
         self.n_game_life = self.player_config.get('n_game_life', 1)
         self.print_stats = self.player_config.get('print_stats', True)
@@ -249,8 +246,7 @@ class BasePlayer(object):
     def set_weights(self, weights):
         self.model.load_state_dict(weights['model'])
         if self.normalize_input and 'running_mean_std' in weights:
-            self.model.running_mean_std.load_state_dict(
-                weights['running_mean_std'])
+            self.model.running_mean_std.load_state_dict(weights['running_mean_std'])
 
     def create_env(self):
         return env_configurations.configurations[self.env_name]['env_creator'](**self.env_config)
@@ -267,8 +263,8 @@ class BasePlayer(object):
     def init_rnn(self):
         if self.is_rnn:
             rnn_states = self.model.get_default_rnn_state()
-            self.states = [torch.zeros((s.size()[0], self.batch_size, s.size(
-            )[2]), dtype=torch.float32).to(self.device) for s in rnn_states]
+            self.states = [torch.zeros((s.size()[0], self.batch_size, s.size()[2]), dtype=torch.float32).to(self.device)
+                           for s in rnn_states]
 
     def run(self):
         n_games = self.games_num
@@ -285,10 +281,7 @@ class BasePlayer(object):
 
         op_agent = getattr(self.env, "create_agent", None)
         if op_agent:
-            agent_inited = True
-            # print('setting agent weights for selfplay')
-            # self.env.create_agent(self.env.config)
-            # self.env.set_weights(range(8),self.get_weights())
+            agent_inited = True  # print('setting agent weights for selfplay')  # self.env.create_agent(self.env.config)  # self.env.set_weights(range(8),self.get_weights())
 
         if has_masks_func:
             has_masks = self.env.has_action_mask()
@@ -319,8 +312,7 @@ class BasePlayer(object):
 
                 if has_masks:
                     masks = self.env.get_action_mask()
-                    action = self.get_masked_action(
-                        obses, masks, is_deterministic)
+                    action = self.get_masked_action(obses, masks, is_deterministic)
                 else:
                     action = self.get_action(obses, is_deterministic)
 
@@ -340,8 +332,7 @@ class BasePlayer(object):
                 if done_count > 0:
                     if self.is_rnn:
                         for s in self.states:
-                            s[:, all_done_indices, :] = s[:,
-                                                          all_done_indices, :] * 0.0
+                            s[:, all_done_indices, :] = s[:, all_done_indices, :] * 0.0
 
                     cur_rewards = cr[done_indices].sum().item()
                     cur_steps = steps[done_indices].sum().item()
@@ -361,24 +352,24 @@ class BasePlayer(object):
                             game_res = info.get('scores', 0.5)
 
                     if self.print_stats:
-                        cur_rewards_done = cur_rewards/done_count
-                        cur_steps_done = cur_steps/done_count
+                        cur_rewards_done = cur_rewards / done_count
+                        cur_steps_done = cur_steps / done_count
                         if print_game_res:
                             print(f'reward: {cur_rewards_done:.2f} steps: {cur_steps_done:.1f} w: {game_res}')
                         else:
                             print(f'reward: {cur_rewards_done:.2f} steps: {cur_steps_done:.1f}')
 
                     sum_game_res += game_res
-                    if batch_size//self.num_agents == 1 or games_played >= n_games:
+                    if batch_size // self.num_agents == 1 or games_played >= n_games:
                         break
 
         print(sum_rewards)
         if print_game_res:
-            print('av reward:', sum_rewards / games_played * n_game_life, 'av steps:', sum_steps /
-                  games_played * n_game_life, 'winrate:', sum_game_res / games_played * n_game_life)
+            print('av reward:', sum_rewards / games_played * n_game_life, 'av steps:',
+                  sum_steps / games_played * n_game_life, 'winrate:', sum_game_res / games_played * n_game_life)
         else:
-            print('av reward:', sum_rewards / games_played * n_game_life,
-                  'av steps:', sum_steps / games_played * n_game_life)
+            print('av reward:', sum_rewards / games_played * n_game_life, 'av steps:',
+                  sum_steps / games_played * n_game_life)
 
     def get_batch_size(self, obses, batch_size):
         obs_shape = self.obs_shape
